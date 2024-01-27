@@ -7,6 +7,6 @@ tree.build_tree(arr, 0, arr.length - 1)
 
 tree.pretty_print
 
-p tree.level_order
+p tree.height(tree.root.right)
 
-tree.pretty_print
+# tree.pretty_print

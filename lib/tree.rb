@@ -50,9 +50,9 @@ class Tree
 
     # If one of the children is empty
     if current.left.nil?
-      delete_if_right_child_exists(current)
+      current.right
     elsif current.right.nil?
-      delete_if_left_child_exists(current)
+      current.left
     # If both children exist
     else
       delete_if_both_childs_exist(current)
@@ -70,7 +70,7 @@ class Tree
   def level_order(current = nil, queue = [@root], arr = [], &block)
     return block_given? ? nil : arr if queue.empty?
 
-    current = queue.shift # rubocop:disable Lint/ShadowedArgument
+    current = queue.shift
 
     yield(current) if block_given?
     arr << current.data
@@ -81,19 +81,49 @@ class Tree
     level_order(current, queue, arr, &block)
   end
 
+  def preorder(current = @root, arr = [], &block)
+    return block_given? ? nil : arr if current.nil?
+
+    yield(current) if block_given?
+    arr << current.data
+
+    preorder(current.left, arr, &block)
+    preorder(current.right, arr, &block)
+  end
+
+  def inorder(current = @root, arr = [], &block)
+    return block_given? ? nil : arr if current.nil?
+
+    inorder(current.left, arr, &block)
+
+    yield(current) if block_given?
+    arr << current.data
+
+    inorder(current.right, arr, &block)
+  end
+
+  def postorder(current = @root, arr = [], &block)
+    return block_given? ? nil : arr if current.nil?
+
+    postorder(current.left, arr, &block)
+    postorder(current.right, arr, &block)
+
+    yield(current) if block_given?
+    arr << current.data
+
+    nil
+  end
+
+  def height(node = @root)
+    return 0 if node.nil?
+
+    left_height = height(node.left)
+    right_height = height(node.right)
+
+    [left_height, right_height].max + 1
+  end
+
   private
-
-  def delete_if_right_child_exists(current)
-    temp = current.right
-    current = nil
-    temp
-  end
-
-  def delete_if_left_child_exists(current)
-    temp = current.left
-    current = nil
-    temp
-  end
 
   def delete_if_both_childs_exist(current)
     successor_parent = current # Now it's the node to be deleted!
