@@ -70,7 +70,7 @@ class Tree
   def level_order(current = nil, queue = [@root], arr = [], &block)
     return block_given? ? nil : arr if queue.empty?
 
-    current = queue.shift
+    current = queue.shift # rubocop:disable Lint/ShadowedArgument
 
     yield(current) if block_given?
     arr << current.data
@@ -103,7 +103,7 @@ class Tree
   end
 
   def postorder(current = @root, arr = [], &block)
-    return block_given? ? nil : arr if current.nil?
+    return if current.nil?
 
     postorder(current.left, arr, &block)
     postorder(current.right, arr, &block)
@@ -111,16 +111,39 @@ class Tree
     yield(current) if block_given?
     arr << current.data
 
-    nil
+    block_given? ? nil : arr
   end
 
   def height(node = @root)
-    return 0 if node.nil?
+    return -1 if node.nil?
 
     left_height = height(node.left)
     right_height = height(node.right)
 
     [left_height, right_height].max + 1
+  end
+
+  def depth(node, current = @root)
+    return 0 if current == node
+
+    depth = depth(node, current.left) if node < current
+    depth = depth(node, current.right) if node > current
+
+    depth + 1
+  end
+
+  def balanced?(current = @root)
+    return if current.nil?
+
+    left_h = height(current.left)
+    right_h = height(current.right)
+
+    (left_h - right_h).abs <= 1
+  end
+
+  def rebalance
+    arr = inorder
+    build_tree(arr, 0, arr.length - 1)
   end
 
   private
