@@ -1,22 +1,23 @@
 require_relative './node'
 
 class Tree
-  attr_accessor :array, :root
+  attr_reader :array, :root
 
   def initialize(arr)
-    @array = arr
-    @root = nil
+    @array = arr.sort.uniq
+    @root = build_tree(array)
   end
 
-  def build_tree(arr, start, ending)
-    return if start > ending
+  def build_tree(arr)
+    return if arr.empty?
 
-    mid = (start + ending) / 2
-    node = Node.new(arr[mid])
+    middle = (arr.length - 1) / 2
+    node = Node.new(arr[middle])
 
-    node.left = build_tree(arr, start, mid - 1)
-    node.right = build_tree(arr, mid + 1, ending)
-    @root = node
+    node.left = build_tree(arr[0...middle])
+    node.right = build_tree(arr[middle + 1..])
+
+    node
   end
 
   def pretty_print(node = @root, prefix = '', is_left = true)
@@ -25,7 +26,7 @@ class Tree
     pretty_print(node.left, "#{prefix}#{is_left ? '    ' : '│   '}", true) if node.left
   end
 
-  def insert(value, current = @root)
+  def insert(value, current = root)
     return Node.new(value) if current.nil?
 
     current.left = insert(value, current.left) if current > value
@@ -34,58 +35,46 @@ class Tree
     current
   end
 
-  def delete(value, current = @root)
+  def delete(value, current = root)
     return current if current.nil?
 
-    # Recursive calls for ancestors of the node to be deleted
     if current > value
       current.left = delete(value, current.left)
-      return current
     elsif current < value
       current.right = delete(value, current.right)
-      return current
-    end
-
-    # We reach here when root is the node to be deleted.
-
-    # If one of the children is empty
-    if current.left.nil?
-      current.right
-    elsif current.right.nil?
-      current.left
-    # If both children exist
     else
-      delete_if_both_childs_exist(current)
+      # We reach here when root is the node to be deleted.
+
+      # If node has one or no child
+      current.right if current.left.nil?
+      current.left if current.right.nil?
+
+      delete_if_two_children(current)
     end
+    current
   end
 
-  def find(value, current = @root)
-    return nil if current.nil?
-    return current if current == value
-
-    find(value, current.left) if current > value
-    find(value, current.right) if current < value
+  def find(value)
+    level_order { |node| return node if node == value }
   end
 
-  def level_order(current = nil, queue = [@root], arr = [], &block)
-    return block_given? ? nil : arr if queue.empty?
+  def level_order
+    queue = [@root]
+    arr = []
+    until queue.empty?
+      current = queue.shift
+      block_given? ? yield(current) : arr << current.data
 
-    current = queue.shift # rubocop:disable Lint/ShadowedArgument
-
-    yield(current) if block_given?
-    arr << current.data
-
-    queue << current.left unless current.left.nil?
-    queue << current.right unless current.right.nil?
-
-    level_order(current, queue, arr, &block)
+      queue << current.left unless current.left.nil?
+      queue << current.right unless current.right.nil?
+    end
+    arr unless block_given?
   end
 
   def preorder(current = @root, arr = [], &block)
     return block_given? ? nil : arr if current.nil?
 
-    yield(current) if block_given?
-    arr << current.data
+    block_given? ? yield(current) : arr << current.data
 
     preorder(current.left, arr, &block)
     preorder(current.right, arr, &block)
@@ -96,8 +85,7 @@ class Tree
 
     inorder(current.left, arr, &block)
 
-    yield(current) if block_given?
-    arr << current.data
+    block_given? ? yield(current) : arr << current.data
 
     inorder(current.right, arr, &block)
   end
@@ -108,8 +96,7 @@ class Tree
     postorder(current.left, arr, &block)
     postorder(current.right, arr, &block)
 
-    yield(current) if block_given?
-    arr << current.data
+    block_given? ? yield(current) : arr << current.data
 
     block_given? ? nil : arr
   end
@@ -117,10 +104,7 @@ class Tree
   def height(node = @root)
     return -1 if node.nil?
 
-    left_height = height(node.left)
-    right_height = height(node.right)
-
-    [left_height, right_height].max + 1
+    [height(node.left), height(node.right)].max + 1
   end
 
   def depth(node, current = @root)
@@ -142,34 +126,19 @@ class Tree
   end
 
   def rebalance
-    arr = inorder
-    build_tree(arr, 0, arr.length - 1)
+    initialize(inorder)
   end
 
   private
 
-  def delete_if_both_childs_exist(current)
-    successor_parent = current # Now it's the node to be deleted!
+  def delete_if_two_children(current)
+    mostleft_node = mostleft_leaf(current.right)
+    current.data = mostleft_node.data
+    current.right = delete(mostleft_node.data, current.right)
+  end
 
-    # Find successor
-    successor = current.right
-    until successor.left.nil?
-      successor_parent = successor
-      successor = successor.left
-    end
-
-    # Delete successor. Since successor is always left child of its parent
-    # we can safely make successor's right right child as left of its parent.
-    # If there is no successor,
-    # then assign successor.right to successor_parent.right
-    if successor_parent != current
-      successor_parent.left = successor.right
-    else
-      successor_parent.right = successor.right
-    end
-
-    current.data = successor.data
-
-    current
+  def mostleft_leaf(node)
+    node = node.left until node.left.nil?
+    node
   end
 end

@@ -1,8 +1,8 @@
 require_relative './lib/tree'
 
-arr = (Array.new(15) { rand(1..100) }).uniq.sort
+arr = (Array.new(15) { rand(1..100) })
 tree = Tree.new(arr)
-tree.build_tree(arr, 0, arr.length - 1)
+tree.build_tree(arr)
 puts "It's #{tree.balanced?} that the tree is proportional."
 puts "All elements in level order: #{tree.level_order}"
 puts "All elements in preorder: #{tree.preorder}"
